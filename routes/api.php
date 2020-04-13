@@ -14,6 +14,34 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/users', function (Request $request) {
+        return response()->json($request->user());
+    });
+
+    Route::apiResource("followers", "FollowerController")->only([
+        'index',
+        'store'
+    ]);
+
+    // Route::get('followers', 'FollowerController@index');
+    // Route::post('followers', 'FollowerController@store');
+
+    Route::delete('followings/{id}', 'FollowingController@destroy');
+
+    // tweets
+    Route::get('tweets', 'TweetController@index');
+    Route::post('tweets', 'TweetController@store');
+
+    //tweets/user
+    Route::get('tweets/users/{id}', 'UserTweetController@index');
+
+
 });
+
+Route::post('/login', 'LoginController@authenticate');
+
+Route::post('/users', 'UserController@store');
+
+

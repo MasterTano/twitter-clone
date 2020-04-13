@@ -2,13 +2,14 @@
 
 namespace App;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use Notifiable;
+    use HasApiTokens, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -16,7 +17,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password',
+        'first_name', 'last_name', 'email', 'password',
     ];
 
     /**
@@ -36,4 +37,81 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * @param $value
+     * @return string
+     */
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['password'] = Hash::make($value);
+    }
+
+    /**
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function following()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'followers',
+            'follower_id',
+            'following_id'
+        );
+    }
+
+    public function followers()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'followers',
+            'following_id',
+            'follower_id'
+        );
+    }
+
+    public function tweets()
+    {
+        return $this->hasMany(Tweet::class);
+    }
+
+    /**
+     * @param Tweet $tweet
+     * @return false|\Illuminate\Database\Eloquent\Model
+     */
+    public function addTweet(Tweet $tweet)
+    {
+        return $this->tweets()->save($tweet);
+    }
+
+    /**
+     * Follow a user
+     * @param User $user
+     * @return false|\Illuminate\Database\Eloquent\Model
+     */
+    public function follow(User $user)
+    {
+        return $this->following()->save($user);
+    }
+
+    /**
+     * Un follow a user you follow
+     * @param User $user
+     * @return mixed
+     */
+    public function unFollow(User $user)
+    {
+        return $this->following()->detach($user);
+    }
+
+    /**
+     * @param User $user
+     * @return bool
+     */
+    public function isFollowing(User $user) : bool
+    {
+        return $this->following()->where('following_id', $user->id)->count('following_id')
+            ? true : false;
+    }
 }
