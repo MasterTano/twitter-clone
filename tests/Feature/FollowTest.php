@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\User;
+use Facades\Tests\Factories\UserFactory;
 use Illuminate\Http\Response;
 use Tests\TestCase;
 
@@ -11,12 +11,12 @@ class FollowTest extends TestCase
     /** @test */
     public function user_can_follow_another_user()
     {
-        $follower = factory(User::class)->create(['email'=> 'adam@email.com']);
-        $beautifulGirl = factory(User::class)->create(['email'=> 'beatiful.girl@email.com']);
+        $follower = UserFactory::create();
+        $following = UserFactory::create();
 
         //this should be changed to POST api/followings
         $response = $this->actingAs($follower)
-            ->json('post', 'api/followers', $beautifulGirl->only('id'));
+            ->json('post', 'api/followers', $following->only('id'));
 
         $response->assertOk();
         $response->assertJsonStructure([
@@ -25,15 +25,16 @@ class FollowTest extends TestCase
 
         $expectedFollower = [
             'follower_id' => $follower->id,
-            'following_id' => $beautifulGirl->id
+            'following_id' => $following->id
         ];
         $this->assertDatabaseHas('followers', $expectedFollower);
+        $this->assertTrue($follower->isFollowing($following));
     }
 
     /** @test */
     public function it_can_return_error_when_following_a_non_existing_user()
     {
-        $follower = factory(User::class)->create(['email'=> 'adam@email.com']);
+        $follower = UserFactory::create();
         $nonExistingUserId = 1000;
 
         // TODO: this should be changed to POST api/followings

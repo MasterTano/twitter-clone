@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Follower;
 use App\Tweet;
 use App\User;
+use Facades\Tests\Factories\TweetFactory;
+use Facades\Tests\Factories\UserFactory;
 use Tests\TestCase;
 
 class TweetTest extends TestCase
@@ -15,30 +16,26 @@ class TweetTest extends TestCase
         $user = factory(User::class)->create();
         $tweet = factory(Tweet::class)->make();
 
-        $response = $this->actingAs($user)
-            ->json('post', '/api/tweets', $tweet->only('body'));
+        $response = $this->actingAs($user)->json('post', '/api/tweets', $tweet->only('body'));
+
+        $response->assertOk();
 
         $tweetToAssert = $user->tweets->first()->only(['id', 'user_id', 'body']);
         $this->assertDatabaseHas('tweets', $tweetToAssert);
     }
 
     /** @test */
-    public function user_can_see_tweets_of_users_he_follows()
+    public function user_can_see_tweets_of_users_he_is_following()
     {
-        // create a follower user
-        $follower = factory(User::class)->create();
+        $user = UserFactory::withFollowing(3)->create();
 
-        // follow users
-        $followings = factory(Follower::class, 3)->create(['follower_id' => $follower->id]);
-
-        // create tweets for users that $follower is following
-        $followings->each(function ($following) {
-            $tweets = factory(Tweet::class, 3)->create(['user_id' => $following->following_id]);
+        $user->followings->each(function ($followingUser) {
+            TweetFactory::ownedBy($followingUser)->create(3);
         });
 
         // call api get /api/tweets
-        $response = $this->actingAs($follower)
-            ->json('get', '/api/tweets');
+        $response = $this->actingAs($user)->json('get', '/api/tweets');
+
 
         $response->assertOk();
         $response->assertJsonCount(9);
@@ -48,12 +45,10 @@ class TweetTest extends TestCase
     /** @test */
     public function user_can_see_tweets_of_a_specific_user()
     {
-        $user = factory(User::class)->create();
-        $tweets = factory(Tweet::class, 3)->create(['user_id' => $user->id]);
-        factory(Tweet::class, 3)->create();
+        // we create tweets and get the user
+        $user = TweetFactory::create(3)->first()->user;
 
-        $response = $this->actingAs($user)
-            ->json('get', '/api/tweets/users/' . $user->id);
+        $response = $this->actingAs($user)->json('get', '/api/tweets/users/' . $user->id);
 
         $response->assertOk();
         $response->assertJsonCount(3);

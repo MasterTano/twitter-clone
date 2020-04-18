@@ -14,6 +14,7 @@ class UserTest extends TestCase
         'email' => 'john.doe@gmail.com',
         'password' => 'password'
     ];
+
     /** @test */
     public function it_can_register_a_user()
     {
@@ -38,23 +39,19 @@ class UserTest extends TestCase
     /** @test */
     public function it_can_return_error_when_data_is_invalid()
     {
-        $response = $this->json('post', '/api/users', [
+        $invalidUserDetails = [
             'first_name' => '',
             'last_name' => '',
             'email' => 'invalid email here',
             'password' => ''
-        ]);
+        ];
+        $response = $this->json('post', '/api/users', $invalidUserDetails);
 
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
 
         $response->assertJsonStructure([
             'message',
-            'errors' => [
-                'first_name',
-                'last_name',
-                'email',
-                'password'
-            ]
+            'errors' => array_keys($invalidUserDetails)
         ]);
     }
 }

@@ -2,8 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Follower;
-use App\User;
+use Facades\Tests\Factories\UserFactory;
 use Tests\TestCase;
 
 class UnfollowTest extends TestCase
@@ -11,12 +10,11 @@ class UnfollowTest extends TestCase
     /** @test */
     public function user_can_unfollow_user_he_follows()
     {
-        // create follower user
-        $followerModel = factory(Follower::class)->create();
-        // get following user
-        $followingUser = User::find($followerModel->following_id);
-        // get follower user
-        $followerUser = User::find($followerModel->follower_id);
+        $followerUser = UserFactory::withFollowing()->create();
+        $followingUser = $followerUser->followings->first();
+
+        // make sure $followerUser is really following the $followingUser before we unfollow
+        $this->assertTrue($followerUser->isFollowing($followingUser));
 
         $response = $this->actingAs($followerUser)
             ->json('delete', '/api/followings/' . $followingUser->id);
@@ -33,18 +31,16 @@ class UnfollowTest extends TestCase
     /** @test */
     public function user_cannot_unfollow_user_he_does_not_follow()
     {
-        // create follower user
-        $followerModel = factory(Follower::class)->create();
-        $otherFollowerModel = factory(Follower::class)->create();
-        $followerUser = User::find($followerModel->follower_id);
+        $followerUser = UserFactory::withFollowing(1)->create();
+        $otherUser = UserFactory::withFollower()->create();
 
         $response = $this->actingAs($followerUser)
-            ->json('delete', '/api/followings/' . $otherFollowerModel->following_id);
+            ->json('delete', '/api/followings/' . $otherUser->id);
 
         $response->assertNotFound();
 
         $this->assertDatabaseHas('followers', [
-            'following_id' => $otherFollowerModel->following_id
+            'following_id' => $otherUser->id
         ]);
     }
 }

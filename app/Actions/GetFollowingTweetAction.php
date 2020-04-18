@@ -9,7 +9,7 @@ class GetFollowingTweetAction
 {
     public function execute(User $user)
     {
-        $followingUsersId = $user->following->pluck('id');
+        $followingUsersId = $user->followings->pluck('id');
         return Tweet::with('user')->whereIn('user_id', $followingUsersId)->get();
     }
 }

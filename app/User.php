@@ -51,7 +51,7 @@ class User extends Authenticatable
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function following()
+    public function followings()
     {
         return $this->belongsToMany(
             User::class,
@@ -92,7 +92,7 @@ class User extends Authenticatable
      */
     public function follow(User $user)
     {
-        return $this->following()->save($user);
+        return $this->followings()->save($user);
     }
 
     /**
@@ -102,7 +102,7 @@ class User extends Authenticatable
      */
     public function unFollow(User $user)
     {
-        return $this->following()->detach($user);
+        return $this->followings()->detach($user);
     }
 
     /**
@@ -111,7 +111,7 @@ class User extends Authenticatable
      */
     public function isFollowing(User $user) : bool
     {
-        return $this->following()->where('following_id', $user->id)->count('following_id')
+        return $this->followings()->where('following_id', $user->id)->count('following_id')
             ? true : false;
     }
 }

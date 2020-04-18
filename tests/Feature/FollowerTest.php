@@ -2,21 +2,19 @@
 
 namespace Tests\Feature;
 
-use App\Follower;
-use App\User;
+use Facades\Tests\Factories\UserFactory;
 use Tests\TestCase;
 
 class FollowerTest extends TestCase
 {
     /** @test */
-    public function user_can_see_list_of_users_that_follows_him()
+    public function user_can_see_list_of_his_followers()
     {
-        // create a user
-        $user = factory(User::class)->create();
-        // create followers for that user
-        $followers = factory(Follower::class, 5)->create(['following_id' => $user->id]);
-        // extra 10 users (follower 5, following 5)
-        factory(Follower::class, 5)->create();
+        // create 5 other users that does not follow him
+        UserFactory::create(5);
+
+        // create a user with 5 followers
+        $user = UserFactory::withFollower(5)->create();
 
         $response = $this->actingAs($user)
             ->json('get', '/api/followers');
